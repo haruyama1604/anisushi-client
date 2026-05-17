@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+# anisushi-client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+アニメ特化の回転寿司SNS「あにすし」のフロントエンド。
 
-Currently, two official plugins are available:
+## 本番URL
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+https://anisushi-client.vercel.app
 
-## React Compiler
+## 技術スタック
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| 技術 | 用途 |
+|---|---|
+| React / TypeScript | UIフレームワーク・言語 |
+| Vite | ビルドツール |
+| Vercel | デプロイ・ホスティング |
 
-## Expanding the ESLint configuration
+## 主な機能
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **コンベアベルト表示** — 投稿が回転寿司のように流れる
+- **tierシステム** — いいね率に応じて皿の色が変わる（金・銀・赤）
+- **いいね** — 投稿・コメントにいいねできる
+- **コメント・返信** — 投稿にコメントと返信を追加できる
+- **箱（コレクション）** — 気に入った投稿をまとめて保存できる
+- **ネタバレ機能** — ネタバレ投稿はブラーをかけて隠す
+- **設定** — アニメ部屋の切り替え
+- **モバイル対応** — スマートフォンでも快適に使える
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## tier計算ロジック
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+likes / views >= 0.7 → gold（金皿）
+likes / views >= 0.4 → silver（銀皿）
+それ以外           → normal（赤皿）
+views = 0          → normal
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## ローカル起動
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
+
+## プロジェクト構成
+
+```
+src/
+├── types/
+│   └── index.ts               # 型定義
+├── utils/
+│   ├── api.ts                 # APIベースURL・ユーザーID管理
+│   └── categories.ts          # アニメカテゴリ・tier設定
+├── components/
+│   ├── PlateCard.tsx          # 寿司皿カード
+│   ├── ConveyorBelt.tsx       # コンベアベルト
+│   ├── Sidebar.tsx            # サイドバー（PC）
+│   ├── BottomNav.tsx          # ボトムナビ（モバイル）
+│   ├── StatsBar.tsx           # ステータスバー
+│   └── modals/
+│       ├── CommentModal.tsx       # コメント・返信モーダル
+│       ├── PostModal.tsx          # 投稿作成モーダル
+│       ├── SettingsModal.tsx      # 設定モーダル
+│       ├── BucketSelectorModal.tsx  # 箱選択モーダル
+│       └── BucketDetailModal.tsx    # 箱詳細モーダル
+└── App.tsx                    # 状態管理・レイアウト
+```
+
+## 環境変数
+
+バックエンドURLは `src/utils/api.ts` の `API_BASE` で設定。
