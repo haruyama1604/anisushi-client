@@ -1,4 +1,4 @@
-export const API_BASE = "https://sushi-sns-api-v2-production.up.railway.app";
+export const API_BASE = "https://anisushi-server-production.up.railway.app";
 
 export function getOrCreateUserId(): string {
   const stored = localStorage.getItem("anisushi_user_id");
