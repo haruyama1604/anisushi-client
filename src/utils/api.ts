@@ -1,4 +1,4 @@
-export const API_BASE = "https://anisushi-server-production.up.railway.app";
+export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
 export function getOrCreateUserId(): string {
   const stored = localStorage.getItem("anisushi_user_id");

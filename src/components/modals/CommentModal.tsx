@@ -33,14 +33,15 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
     setReplies(Object.fromEntries(entries));
   };
 
-  useEffect(() => { fetchComments(); }, [post.id]);
+  useEffect(() => {
+    fetchComments();
+    fetch(`${API_BASE}/posts/${post.id}/view`, { method: "POST" }).catch(() => {});
+  }, [post.id]);
 
   const handleHeartClick = (commentId: number, isLiked: boolean) => {
     if (isLiked) {
-      fetch(`${API_BASE}/comments/${commentId}/like`, {
+      fetch(`${API_BASE}/comments/${commentId}/like?user_id=${userId}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
       }).then(() => {
         setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, likes: Math.max(0, c.likes - 1), liked_by_user: false } : c));
       });
@@ -69,19 +70,15 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
   };
 
   const handleDeleteReply = async (replyId: number, commentId: number) => {
-    await fetch(`${API_BASE}/replies/${replyId}`, {
+    await fetch(`${API_BASE}/replies/${replyId}?user_id=${userId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
     });
     setReplies((prev) => ({ ...prev, [commentId]: (prev[commentId] ?? []).filter((r) => r.id !== replyId) }));
   };
 
   const handleDeleteComment = async (commentId: number) => {
-    await fetch(`${API_BASE}/comments/${commentId}`, {
+    await fetch(`${API_BASE}/comments/${commentId}?user_id=${userId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
     });
     setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
