@@ -49,10 +49,8 @@ export function PlateCard({
   };
 
   const handleDeleteConfirm = () => {
-    fetch(`${API_BASE}/posts/${post.id}`, {
+    fetch(`${API_BASE}/posts/${post.id}?user_id=${userId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
     }).then((res) => { if (res.ok) onDelete?.(post.id); });
   };
 

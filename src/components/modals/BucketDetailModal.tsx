@@ -20,10 +20,8 @@ export function BucketDetailModal({ bucket, userId, onClose, likedIds, onOpenCom
   }, [bucket.id, userId]);
 
   const removePost = async (postId: number) => {
-    await fetch(`${API_BASE}/buckets/${bucket.id}/posts/${postId}`, {
+    await fetch(`${API_BASE}/buckets/${bucket.id}/posts/${postId}?user_id=${userId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
     });
     setBucketPosts((prev) => prev.filter((p) => p.id !== postId));
   };
