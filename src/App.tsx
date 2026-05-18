@@ -80,10 +80,8 @@ export default function App() {
   }, [userId]);
 
   const handleUnlike = useCallback(async (id: number) => {
-    await fetch(`${API_BASE}/posts/${id}/like`, {
+    await fetch(`${API_BASE}/posts/${id}/like?user_id=${userId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
     });
     setLikedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
     setPosts((prev) => prev.map((p) => p.id === id ? { ...p, likes: Math.max(0, p.likes - 1) } : p));
@@ -127,10 +125,8 @@ export default function App() {
   };
 
   const handleDeleteBucket = async (bucketId: number) => {
-    await fetch(`${API_BASE}/buckets/${bucketId}`, {
+    await fetch(`${API_BASE}/buckets/${bucketId}?user_id=${userId}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
     });
     setBuckets((prev) => prev.filter((b) => b.id !== bucketId));
   };
