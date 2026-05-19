@@ -23,14 +23,12 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
     const data: Comment[] = await fetch(`${API_BASE}/posts/${post.id}/comments?user_id=${userId}`)
       .then((r) => r.json()).catch(() => []);
     setComments(data);
-    const entries = await Promise.all(
-      data.map(async (c) => {
-        const reps: Reply[] = await fetch(`${API_BASE}/comments/${c.id}/replies`)
-          .then((r) => r.json()).catch(() => []);
-        return [c.id, reps] as [number, Reply[]];
-      })
-    );
-    setReplies(Object.fromEntries(entries));
+    // サーバが replies をネストして返すので、個別 fetch は不要（N+1 解消）
+    const repliesMap: Record<number, Reply[]> = {};
+    for (const c of data) {
+      repliesMap[c.id] = c.replies ?? [];
+    }
+    setReplies(repliesMap);
   };
 
   useEffect(() => {
@@ -94,7 +92,7 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: input.trim(), user_id: userId }),
     }).then((r) => r.json());
-    setComments((prev) => [...prev, { ...newComment, liked_by_user: false }]);
+    setComments((prev) => [...prev, { ...newComment, liked_by_user: false, replies: [] }]);
     setReplies((prev) => ({ ...prev, [newComment.id]: [] }));
     setInput("");
   };

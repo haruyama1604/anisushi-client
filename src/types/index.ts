@@ -22,6 +22,7 @@ export type Comment = {
   likes: number;
   created_at: string;
   liked_by_user: boolean;
+  replies: Reply[];
 };
 
 export type Reply = {
