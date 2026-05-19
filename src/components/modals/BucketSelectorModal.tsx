@@ -1,11 +1,10 @@
 import { useState } from "react";
 import type { Post, Bucket } from "../../types";
-import { API_BASE } from "../../utils/api";
+import { API_BASE, authFetch } from "../../utils/api";
 
-export function BucketSelectorModal({ post, buckets, userId, onClose, onBucketCreated, onAdded }: {
+export function BucketSelectorModal({ post, buckets, onClose, onBucketCreated, onAdded }: {
   post: Post;
   buckets: Bucket[];
-  userId: string;
   onClose: () => void;
   onBucketCreated: (b: Bucket) => void;
   onAdded: () => void;
@@ -16,10 +15,10 @@ export function BucketSelectorModal({ post, buckets, userId, onClose, onBucketCr
   const addToExisting = async (bucketId: number) => {
     if (adding) return;
     setAdding(true);
-    await fetch(`${API_BASE}/buckets/${bucketId}/posts`, {
+    await authFetch(`${API_BASE}/buckets/${bucketId}/posts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post_id: post.id, user_id: userId }),
+      body: JSON.stringify({ post_id: post.id }),
     });
     onAdded();
     onClose();
@@ -28,17 +27,17 @@ export function BucketSelectorModal({ post, buckets, userId, onClose, onBucketCr
   const createAndAdd = async () => {
     if (!newName.trim() || adding) return;
     setAdding(true);
-    const res = await fetch(`${API_BASE}/buckets`, {
+    const res = await authFetch(`${API_BASE}/buckets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName.trim(), user_id: userId }),
+      body: JSON.stringify({ name: newName.trim() }),
     });
     const bucket: Bucket = await res.json();
     onBucketCreated(bucket);
-    await fetch(`${API_BASE}/buckets/${bucket.id}/posts`, {
+    await authFetch(`${API_BASE}/buckets/${bucket.id}/posts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post_id: post.id, user_id: userId }),
+      body: JSON.stringify({ post_id: post.id }),
     });
     onAdded();
     onClose();

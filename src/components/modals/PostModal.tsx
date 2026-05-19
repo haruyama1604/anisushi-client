@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { API_BASE } from "../../utils/api";
+import { API_BASE, authFetch } from "../../utils/api";
 
-export function PostModal({ currentRoom, onClose, onPosted, userId }: {
+export function PostModal({ currentRoom, onClose, onPosted }: {
   currentRoom: string | undefined;
   onClose: () => void;
   onPosted: () => void;
-  userId: string;
 }) {
   const [text, setText] = useState("");
   const [isSpoiler, setIsSpoiler] = useState(false);
@@ -13,10 +12,10 @@ export function PostModal({ currentRoom, onClose, onPosted, userId }: {
 
   const submit = async () => {
     if (!text.trim()) return;
-    await fetch(`${API_BASE}/posts`, {
+    await authFetch(`${API_BASE}/posts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: text.trim(), user_id: userId, room: currentRoom || "", spoiler: isSpoiler }),
+      body: JSON.stringify({ content: text.trim(), room: currentRoom || "", spoiler: isSpoiler }),
     });
     onPosted();
     onClose();

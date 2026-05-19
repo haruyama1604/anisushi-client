@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import type { Bucket, Post } from "../../types";
-import { API_BASE } from "../../utils/api";
+import { API_BASE, authFetch } from "../../utils/api";
 import { TIER_CONFIG } from "../../utils/categories";
 
-export function BucketDetailModal({ bucket, userId, onClose, likedIds, onOpenComments }: {
+export function BucketDetailModal({ bucket, onClose, likedIds, onOpenComments }: {
   bucket: Bucket;
-  userId: string;
   onClose: () => void;
   likedIds: Set<number>;
   onOpenComments: (post: Post) => void;
@@ -13,14 +12,14 @@ export function BucketDetailModal({ bucket, userId, onClose, likedIds, onOpenCom
   const [bucketPosts, setBucketPosts] = useState<Post[]>([]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/buckets/${bucket.id}/posts?user_id=${userId}`)
+    authFetch(`${API_BASE}/buckets/${bucket.id}/posts`)
       .then((r) => r.json())
       .then((data: Post[]) => setBucketPosts(data))
       .catch(() => {});
-  }, [bucket.id, userId]);
+  }, [bucket.id]);
 
   const removePost = async (postId: number) => {
-    await fetch(`${API_BASE}/buckets/${bucket.id}/posts/${postId}?user_id=${userId}`, {
+    await authFetch(`${API_BASE}/buckets/${bucket.id}/posts/${postId}`, {
       method: "DELETE",
     });
     setBucketPosts((prev) => prev.filter((p) => p.id !== postId));

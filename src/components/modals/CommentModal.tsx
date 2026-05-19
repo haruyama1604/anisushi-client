@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Post, Comment, Reply, Bucket } from "../../types";
-import { API_BASE } from "../../utils/api";
+import { API_BASE, authFetch } from "../../utils/api";
 import { TIER_CONFIG } from "../../utils/categories";
 
 export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBackToBucket }: {
@@ -20,7 +20,7 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
   const tier = TIER_CONFIG[post.tier];
 
   const fetchComments = async () => {
-    const data: Comment[] = await fetch(`${API_BASE}/posts/${post.id}/comments?user_id=${userId}`)
+    const data: Comment[] = await authFetch(`${API_BASE}/posts/${post.id}/comments`)
       .then((r) => r.json()).catch(() => []);
     setComments(data);
     // サーバが replies をネストして返すので、個別 fetch は不要（N+1 解消）
@@ -33,25 +33,23 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
 
   useEffect(() => {
     fetchComments();
-    fetch(`${API_BASE}/posts/${post.id}/view`, {
+    authFetch(`${API_BASE}/posts/${post.id}/view`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
+      body: JSON.stringify({}),
     }).catch(() => {});
   }, [post.id]);
 
   const handleHeartClick = (commentId: number, isLiked: boolean) => {
     if (isLiked) {
-      fetch(`${API_BASE}/comments/${commentId}/like?user_id=${userId}`, {
-        method: "DELETE",
-      }).then(() => {
+      authFetch(`${API_BASE}/comments/${commentId}/like`, { method: "DELETE" }).then(() => {
         setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, likes: Math.max(0, c.likes - 1), liked_by_user: false } : c));
       });
     } else {
-      fetch(`${API_BASE}/comments/${commentId}/like`, {
+      authFetch(`${API_BASE}/comments/${commentId}/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({}),
       }).then(() => {
         setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, likes: c.likes + 1, liked_by_user: true } : c));
       });
@@ -61,10 +59,10 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
   const handleAddReply = async (commentId: number) => {
     const text = (replyTexts[commentId] ?? "").trim();
     if (!text) return;
-    const reply: Reply = await fetch(`${API_BASE}/comments/${commentId}/replies`, {
+    const reply: Reply = await authFetch(`${API_BASE}/comments/${commentId}/replies`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, user_id: userId }),
+      body: JSON.stringify({ text }),
     }).then((r) => r.json());
     setReplies((prev) => ({ ...prev, [commentId]: [...(prev[commentId] ?? []), reply] }));
     setReplyTexts((prev) => ({ ...prev, [commentId]: "" }));
@@ -72,25 +70,21 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
   };
 
   const handleDeleteReply = async (replyId: number, commentId: number) => {
-    await fetch(`${API_BASE}/replies/${replyId}?user_id=${userId}`, {
-      method: "DELETE",
-    });
+    await authFetch(`${API_BASE}/replies/${replyId}`, { method: "DELETE" });
     setReplies((prev) => ({ ...prev, [commentId]: (prev[commentId] ?? []).filter((r) => r.id !== replyId) }));
   };
 
   const handleDeleteComment = async (commentId: number) => {
-    await fetch(`${API_BASE}/comments/${commentId}?user_id=${userId}`, {
-      method: "DELETE",
-    });
+    await authFetch(`${API_BASE}/comments/${commentId}`, { method: "DELETE" });
     setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
   const submit = async () => {
     if (!input.trim()) return;
-    const newComment: Comment = await fetch(`${API_BASE}/posts/${post.id}/comments`, {
+    const newComment: Comment = await authFetch(`${API_BASE}/posts/${post.id}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: input.trim(), user_id: userId }),
+      body: JSON.stringify({ text: input.trim() }),
     }).then((r) => r.json());
     setComments((prev) => [...prev, { ...newComment, liked_by_user: false, replies: [] }]);
     setReplies((prev) => ({ ...prev, [newComment.id]: [] }));

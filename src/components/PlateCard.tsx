@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Post } from "../types";
-import { API_BASE } from "../utils/api";
+import { API_BASE, authFetch } from "../utils/api";
 import { TIER_CONFIG } from "../utils/categories";
 
 export function PlateCard({
@@ -49,9 +49,8 @@ export function PlateCard({
   };
 
   const handleDeleteConfirm = () => {
-    fetch(`${API_BASE}/posts/${post.id}?user_id=${userId}`, {
-      method: "DELETE",
-    }).then((res) => { if (res.ok) onDelete?.(post.id); });
+    authFetch(`${API_BASE}/posts/${post.id}`, { method: "DELETE" })
+      .then((res) => { if (res.ok) onDelete?.(post.id); });
   };
 
   return (

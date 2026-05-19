@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { Post, Bucket, Selected, NavPage } from "./types";
-import { API_BASE, getOrCreateUserId } from "./utils/api";
+import { API_BASE, authFetch, ensureAuth, getStoredUserId } from "./utils/api";
 import { CATEGORIES } from "./utils/categories";
 import { PlateCard } from "./components/PlateCard";
 import { ConveyorBelt } from "./components/ConveyorBelt";
@@ -14,7 +14,8 @@ import { BucketSelectorModal } from "./components/modals/BucketSelectorModal";
 import { BucketDetailModal } from "./components/modals/BucketDetailModal";
 
 export default function App() {
-  const [userId] = useState(() => getOrCreateUserId());
+  const [userId, setUserId] = useState<string | null>(() => getStoredUserId());
+  const [authError, setAuthError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Selected>({ cat: CATEGORIES[0], sub: CATEGORIES[0].subs[0], room: CATEGORIES[0].subs[0].rooms[0] });
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
@@ -44,6 +45,14 @@ export default function App() {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
+  // 初回起動時に匿名JWTを発行する（既に localStorage にあれば即解決）
+  useEffect(() => {
+    if (userId) return;
+    ensureAuth()
+      .then(({ user_id }) => setUserId(user_id))
+      .catch((e) => setAuthError(String(e)));
+  }, [userId]);
+
   const fetchPosts = useCallback(() => {
     fetch(`${API_BASE}/posts`)
       .then((r) => r.json())
@@ -52,14 +61,16 @@ export default function App() {
   }, []);
 
   const fetchLikedIds = useCallback(() => {
-    fetch(`${API_BASE}/posts/liked?user_id=${userId}`)
+    if (!userId) return;
+    authFetch(`${API_BASE}/posts/liked`)
       .then((r) => r.json())
       .then((ids: number[]) => setLikedIds(new Set(ids)))
       .catch(() => {});
   }, [userId]);
 
   const fetchBuckets = useCallback(() => {
-    fetch(`${API_BASE}/buckets?user_id=${userId}`)
+    if (!userId) return;
+    authFetch(`${API_BASE}/buckets`)
       .then((r) => r.json())
       .then((data: Bucket[]) => setBuckets(data))
       .catch(() => {});
@@ -70,22 +81,20 @@ export default function App() {
   useEffect(() => { fetchBuckets(); }, [fetchBuckets]);
 
   const handleLike = useCallback(async (id: number) => {
-    await fetch(`${API_BASE}/posts/${id}/like`, {
+    await authFetch(`${API_BASE}/posts/${id}/like`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
+      body: JSON.stringify({}),
     });
     setLikedIds((prev) => { const n = new Set(prev); n.add(id); return n; });
     setPosts((prev) => prev.map((p) => p.id === id ? { ...p, likes: p.likes + 1 } : p));
-  }, [userId]);
+  }, []);
 
   const handleUnlike = useCallback(async (id: number) => {
-    await fetch(`${API_BASE}/posts/${id}/like?user_id=${userId}`, {
-      method: "DELETE",
-    });
+    await authFetch(`${API_BASE}/posts/${id}/like`, { method: "DELETE" });
     setLikedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
     setPosts((prev) => prev.map((p) => p.id === id ? { ...p, likes: Math.max(0, p.likes - 1) } : p));
-  }, [userId]);
+  }, []);
 
   const handleOpenComments = useCallback((post: Post) => {
     setCommentPost(post);
@@ -114,10 +123,10 @@ export default function App() {
   const handleCreateBucket = async () => {
     if (!newBucketName.trim()) { setCreatingBucket(false); return; }
     setCreatingBucket(false);
-    const res = await fetch(`${API_BASE}/buckets`, {
+    const res = await authFetch(`${API_BASE}/buckets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newBucketName.trim(), user_id: userId }),
+      body: JSON.stringify({ name: newBucketName.trim() }),
     });
     const bucket: Bucket = await res.json();
     setBuckets((prev) => [...prev, bucket]);
@@ -125,9 +134,7 @@ export default function App() {
   };
 
   const handleDeleteBucket = async (bucketId: number) => {
-    await fetch(`${API_BASE}/buckets/${bucketId}?user_id=${userId}`, {
-      method: "DELETE",
-    });
+    await authFetch(`${API_BASE}/buckets/${bucketId}`, { method: "DELETE" });
     setBuckets((prev) => prev.filter((b) => b.id !== bucketId));
   };
 
@@ -135,6 +142,23 @@ export default function App() {
   const filteredPosts = activeTab === "room"
     ? posts.filter((p) => p.room === selected?.room)
     : posts;
+
+  // 認証ブートストラップ中・失敗時のゲート
+  if (!userId) {
+    return (
+      <div style={{ display: "flex", height: "100vh", background: "#0a0a12", color: "#e0e0e0", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans JP', sans-serif", flexDirection: "column", gap: 12 }}>
+        {authError ? (
+          <>
+            <div style={{ fontSize: 14, color: "#e74c3c" }}>⚠ 接続できませんでした</div>
+            <div style={{ fontSize: 12, color: "#666" }}>{authError}</div>
+            <button onClick={() => { setAuthError(null); ensureAuth().then(({ user_id }) => setUserId(user_id)).catch((e) => setAuthError(String(e))); }} style={{ padding: "8px 18px", background: "#c0392b", border: "none", borderRadius: 10, color: "#fff", cursor: "pointer", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 700, marginTop: 8 }}>再試行</button>
+          </>
+        ) : (
+          <div style={{ fontSize: 14, color: "#888" }}>🍣 準備中…</div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#0a0a12", fontFamily: "'Noto Sans JP', sans-serif", overflow: "hidden" }}>
@@ -325,13 +349,12 @@ export default function App() {
 
       {/* Modals */}
       {commentPost && <CommentModal post={commentPost} onClose={() => { setCommentPost(null); setCommentFromBucket(null); }} likedIds={likedIds} userId={userId} fromBucket={commentFromBucket ?? undefined} onBackToBucket={commentFromBucket ? () => { setCommentPost(null); setViewingBucket(commentFromBucket); setCommentFromBucket(null); } : undefined} />}
-      {showPost && <PostModal currentRoom={selected?.room} onClose={() => setShowPost(false)} onPosted={fetchPosts} userId={userId} />}
+      {showPost && <PostModal currentRoom={selected?.room} onClose={() => setShowPost(false)} onPosted={fetchPosts} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} reducedMotion={reducedMotion} onToggleReducedMotion={() => setReducedMotion((v) => !v)} showSpoilers={showSpoilers} onToggleShowSpoilers={() => setShowSpoilers((v) => !v)} laneCount={laneCount} onSetLaneCount={setLaneCount} lane1Dir={lane1Dir} onSetLane1Dir={setLane1Dir} lane2Dir={lane2Dir} onSetLane2Dir={setLane2Dir} isMobile={isMobile} />}
       {bucketTarget && (
         <BucketSelectorModal
           post={bucketTarget}
           buckets={buckets}
-          userId={userId}
           onClose={() => setBucketTarget(null)}
           onBucketCreated={(b) => setBuckets((prev) => [...prev, b])}
           onAdded={() => {}}
@@ -340,7 +363,6 @@ export default function App() {
       {viewingBucket && (
         <BucketDetailModal
           bucket={viewingBucket}
-          userId={userId}
           onClose={() => setViewingBucket(null)}
           likedIds={likedIds}
           onOpenComments={(post) => {
