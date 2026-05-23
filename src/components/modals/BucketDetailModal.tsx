@@ -3,26 +3,33 @@ import type { Bucket, Post } from "../../types";
 import { API_BASE, authFetch } from "../../utils/api";
 import { TIER_CONFIG } from "../../utils/categories";
 
-export function BucketDetailModal({ bucket, onClose, likedIds, onOpenComments }: {
+export function BucketDetailModal({ bucket, onClose, likedIds, onOpenComments, allPosts }: {
   bucket: Bucket;
   onClose: () => void;
   likedIds: Set<number>;
   onOpenComments: (post: Post) => void;
+  allPosts: Post[];
 }) {
-  const [bucketPosts, setBucketPosts] = useState<Post[]>([]);
+  // 箱に紐づく post_id の集合のみ保持。実体は allPosts（App.tsx の posts）から
+  // フィルタで導出することで、皿削除時に自動で表示からも消える（同期ズレを防ぐ）。
+  const [bucketPostIds, setBucketPostIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     authFetch(`${API_BASE}/buckets/${bucket.id}/posts`)
       .then((r) => r.json())
-      .then((data: Post[]) => setBucketPosts(data))
+      .then((data: Post[]) => setBucketPostIds(new Set(data.map((p) => p.id))))
       .catch(() => {});
   }, [bucket.id]);
+
+  // allPosts と bucketPostIds の交差で表示する皿一覧を導出。
+  // allPosts から削除された皿は自動的に表示からも消える。
+  const bucketPosts = allPosts.filter((p) => bucketPostIds.has(p.id));
 
   const removePost = async (postId: number) => {
     await authFetch(`${API_BASE}/buckets/${bucket.id}/posts/${postId}`, {
       method: "DELETE",
     });
-    setBucketPosts((prev) => prev.filter((p) => p.id !== postId));
+    setBucketPostIds((prev) => { const n = new Set(prev); n.delete(postId); return n; });
   };
 
   return (

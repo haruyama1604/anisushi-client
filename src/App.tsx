@@ -546,6 +546,7 @@ export default function App() {
       {viewingBucket && (
         <BucketDetailModal
           bucket={viewingBucket}
+          allPosts={posts}
           onClose={() => setViewingBucket(null)}
           likedIds={likedIds}
           onOpenComments={(post) => {
