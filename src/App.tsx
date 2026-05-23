@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { Post, Bucket, Selected, NavPage } from "./types";
 import { API_BASE, authFetch, ensureAuth, getStoredUserId } from "./utils/api";
 import { CATEGORIES } from "./utils/categories";
+import { parseHash, routeToHash, type Route } from "./utils/router";
 import { PlateCard } from "./components/PlateCard";
 import { ConveyorBelt } from "./components/ConveyorBelt";
 import { Sidebar } from "./components/Sidebar";
@@ -13,10 +14,25 @@ import { SettingsModal } from "./components/modals/SettingsModal";
 import { BucketSelectorModal } from "./components/modals/BucketSelectorModal";
 import { BucketDetailModal } from "./components/modals/BucketDetailModal";
 
+// URLハッシュから初期 route を 1 回だけ計算するヘルパー。useState の lazy init で使う。
+// 各useState の lazy init 内で個別に parseHash を呼ぶより、共通化して 1 度の解析に揃える。
+function readInitialRoute(): Route {
+  const route = parseHash(typeof window !== "undefined" ? window.location.hash : "", CATEGORIES);
+  console.log("[router] initial hash:", typeof window !== "undefined" ? window.location.hash : "(no window)", "→ route:", route);
+  return route;
+}
+
 export default function App() {
   const [userId, setUserId] = useState<string | null>(() => getStoredUserId());
   const [authError, setAuthError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Selected>({ cat: CATEGORIES[0], sub: CATEGORIES[0].subs[0], room: CATEGORIES[0].subs[0].rooms[0] });
+
+  // selected / activeTab / activePage を URL hash から初期化する（lazy init）。
+  // 初期 state を正しい値にしておくことで「初回 state→URL useEffect で stale state を見て URL を上書き」を防ぐ。
+  const [selected, setSelected] = useState<Selected>(() => {
+    const r = readInitialRoute();
+    if (r.kind === "home" && r.tab === "room" && r.selected) return r.selected;
+    return { cat: CATEGORIES[0], sub: CATEGORIES[0].subs[0], room: CATEGORIES[0].subs[0].rooms[0] };
+  });
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
   const [commentPost, setCommentPost] = useState<Post | null>(null);
@@ -28,8 +44,16 @@ export default function App() {
   const [laneCount, setLaneCount] = useState<1 | 2>(2);
   const [lane1Dir, setLane1Dir] = useState<"rtl" | "ltr">("rtl");
   const [lane2Dir, setLane2Dir] = useState<"rtl" | "ltr">("ltr");
-  const [activeTab, setActiveTab] = useState<"feed" | "room">("feed");
-  const [activePage, setActivePage] = useState<NavPage>("home");
+  const [activeTab, setActiveTab] = useState<"feed" | "room">(() => {
+    const r = readInitialRoute();
+    return r.kind === "home" ? r.tab : "feed";
+  });
+  const [activePage, setActivePage] = useState<NavPage>(() => {
+    const r = readInitialRoute();
+    if (r.kind === "collection" || r.kind === "bucket") return "collection";
+    if (r.kind === "post-comments" && r.fromBucketId !== undefined) return "collection";
+    return "home";
+  });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [buckets, setBuckets] = useState<Bucket[]>([]);
@@ -39,11 +63,147 @@ export default function App() {
   const [newBucketName, setNewBucketName] = useState("");
   const newBucketInputRef = useRef<HTMLInputElement>(null);
 
+  // URLハッシュ復元用：post/bucket オブジェクトは posts/buckets fetch後にIDから解決する必要があるため、
+  // 初期マウント時に hash から ID を読み出して保持しておく。
+  const [pendingPostId, setPendingPostId] = useState<number | null>(() => {
+    const r = readInitialRoute();
+    return r.kind === "post-comments" ? r.postId : null;
+  });
+  const [pendingBucketId, setPendingBucketId] = useState<number | null>(() => {
+    const r = readInitialRoute();
+    return r.kind === "bucket" ? r.bucketId : null;
+  });
+  const [pendingFromBucketId, setPendingFromBucketId] = useState<number | null>(() => {
+    const r = readInitialRoute();
+    return r.kind === "post-comments" && r.fromBucketId !== undefined ? r.fromBucketId : null;
+  });
+  // posts/buckets のfetch完了フラグ（pendingを「見つからない=クリア」と判定するため）
+  const [postsLoaded, setPostsLoaded] = useState(false);
+  const [bucketsLoaded, setBucketsLoaded] = useState(false);
+
+  // 絶対防壁フラグ：このフラグが true になるまで state→URL の書き換えは一切走らせない。
+  // 初期 route が post-comments / bucket（posts/buckets ロード後の非同期解決が必要）なら false で開始。
+  // それ以外（home / collection）は state が既に URL から lazy init 済みなので即 true。
+  const [isInitialized, setIsInitialized] = useState<boolean>(() => {
+    const r = readInitialRoute();
+    const needsAsync = r.kind === "post-comments" || r.kind === "bucket";
+    console.log("[router] isInitialized initial:", !needsAsync, "(needsAsync:", needsAsync, ")");
+    return !needsAsync;
+  });
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
+
+  // URL（#/...）→ state を反映する関数。popstate（ブラウザの戻る/進む）でのみ使う。
+  // 初回マウント時の state は useState の lazy init で既に URL から導出済みのため、ここでは何もしない。
+  useEffect(() => {
+    const applyFromHash = () => {
+      const route = parseHash(window.location.hash, CATEGORIES);
+      console.log("[router] popstate → route:", route);
+      switch (route.kind) {
+        case "home":
+          setActivePage("home");
+          setActiveTab(route.tab);
+          if (route.tab === "room" && route.selected) setSelected(route.selected);
+          setCommentPost(null);
+          setViewingBucket(null);
+          setCommentFromBucket(null);
+          setPendingPostId(null);
+          setPendingBucketId(null);
+          setPendingFromBucketId(null);
+          break;
+        case "collection":
+          setActivePage("collection");
+          setCommentPost(null);
+          setViewingBucket(null);
+          setCommentFromBucket(null);
+          setPendingPostId(null);
+          setPendingBucketId(null);
+          setPendingFromBucketId(null);
+          break;
+        case "bucket":
+          setActivePage("collection");
+          setCommentPost(null);
+          setCommentFromBucket(null);
+          setPendingBucketId(route.bucketId);
+          setPendingPostId(null);
+          setPendingFromBucketId(null);
+          break;
+        case "post-comments":
+          setPendingPostId(route.postId);
+          setPendingFromBucketId(route.fromBucketId ?? null);
+          if (route.fromBucketId !== undefined) setActivePage("collection");
+          break;
+      }
+    };
+    const onPop = () => applyFromHash();
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // 初期化完了の判定：pending 系がすべて解決したら isInitialized を true にする。
+  // これ以降、state→URL の書き換えが有効になる。
+  useEffect(() => {
+    if (isInitialized) return;
+    if (pendingPostId !== null || pendingBucketId !== null || pendingFromBucketId !== null) return;
+    console.log("[router] initialization complete (after pending resolved)");
+    setIsInitialized(true);
+  }, [isInitialized, pendingPostId, pendingBucketId, pendingFromBucketId]);
+
+  // posts/buckets ロード後にペンディングのIDをオブジェクトに解決する。
+  // ロード未完了の段階では「見つからない=クリア」と判定したくないので postsLoaded/bucketsLoaded で待つ。
+  useEffect(() => {
+    if (pendingPostId === null || !postsLoaded) return;
+    const p = posts.find((x) => x.id === pendingPostId);
+    if (p) setCommentPost(p);
+    setPendingPostId(null);
+  }, [pendingPostId, posts, postsLoaded]);
+
+  useEffect(() => {
+    if (pendingBucketId === null || !bucketsLoaded) return;
+    const b = buckets.find((x) => x.id === pendingBucketId);
+    if (b) setViewingBucket(b);
+    setPendingBucketId(null);
+  }, [pendingBucketId, buckets, bucketsLoaded]);
+
+  useEffect(() => {
+    if (pendingFromBucketId === null || !bucketsLoaded) return;
+    const b = buckets.find((x) => x.id === pendingFromBucketId);
+    if (b) setCommentFromBucket(b);
+    setPendingFromBucketId(null);
+  }, [pendingFromBucketId, buckets, bucketsLoaded]);
+
+  // state → URL を反映（ユーザー操作の結果としてURLを書き換える）。
+  // 絶対防壁：isInitialized が true になるまで window.location.hash には一切触らない。
+  // 追加防壁：pending* が残っている間も書き換えない（popstate 後の async 解決中など）。
+  useEffect(() => {
+    if (!isInitialized) {
+      console.log("[router] skip URL write (not initialized yet)");
+      return;
+    }
+    if (pendingPostId !== null || pendingBucketId !== null || pendingFromBucketId !== null) {
+      console.log("[router] skip URL write (pending resolution in progress)");
+      return;
+    }
+    let route: Route;
+    if (commentPost) {
+      route = { kind: "post-comments", postId: commentPost.id, fromBucketId: commentFromBucket?.id };
+    } else if (viewingBucket) {
+      route = { kind: "bucket", bucketId: viewingBucket.id };
+    } else if (activePage === "collection") {
+      route = { kind: "collection" };
+    } else {
+      route = { kind: "home", tab: activeTab, selected: activeTab === "room" ? selected : undefined };
+    }
+    const newHash = routeToHash(route);
+    if (window.location.hash !== newHash) {
+      console.log("[router] write URL:", window.location.hash, "→", newHash);
+      window.history.pushState(null, "", newHash);
+    }
+  }, [isInitialized, activePage, activeTab, selected, commentPost, viewingBucket, commentFromBucket, pendingPostId, pendingBucketId, pendingFromBucketId]);
 
   // 初回起動時に匿名JWTを発行する（既に localStorage にあれば即解決）
   useEffect(() => {
@@ -56,8 +216,8 @@ export default function App() {
   const fetchPosts = useCallback(() => {
     fetch(`${API_BASE}/posts`)
       .then((r) => r.json())
-      .then((data: Post[]) => setPosts(data))
-      .catch(() => {});
+      .then((data: Post[]) => { setPosts(data); setPostsLoaded(true); })
+      .catch(() => setPostsLoaded(true));
   }, []);
 
   const fetchLikedIds = useCallback(() => {
@@ -72,8 +232,8 @@ export default function App() {
     if (!userId) return;
     authFetch(`${API_BASE}/buckets`)
       .then((r) => r.json())
-      .then((data: Bucket[]) => setBuckets(data))
-      .catch(() => {});
+      .then((data: Bucket[]) => { setBuckets(data); setBucketsLoaded(true); })
+      .catch(() => setBucketsLoaded(true));
   }, [userId]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
