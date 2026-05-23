@@ -51,8 +51,16 @@ export default function App() {
   const [activePage, setActivePage] = useState<NavPage>(() => {
     const r = readInitialRoute();
     if (r.kind === "collection" || r.kind === "bucket") return "collection";
-    if (r.kind === "post-comments" && r.fromBucketId !== undefined) return "collection";
+    if (r.kind === "post-comments") {
+      if (r.fromBucketId !== undefined || r.from === "collection") return "collection";
+    }
     return "home";
+  });
+  // コメントモーダルを開いた時の背景画面（リロード時にコレクション/ホームを正しく復元するため）
+  const [commentFromPage, setCommentFromPage] = useState<"home" | "collection" | null>(() => {
+    const r = readInitialRoute();
+    if (r.kind === "post-comments" && r.fromBucketId === undefined && r.from) return r.from;
+    return null;
   });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -111,6 +119,7 @@ export default function App() {
           setCommentPost(null);
           setViewingBucket(null);
           setCommentFromBucket(null);
+          setCommentFromPage(null);
           setPendingPostId(null);
           setPendingBucketId(null);
           setPendingFromBucketId(null);
@@ -120,6 +129,7 @@ export default function App() {
           setCommentPost(null);
           setViewingBucket(null);
           setCommentFromBucket(null);
+          setCommentFromPage(null);
           setPendingPostId(null);
           setPendingBucketId(null);
           setPendingFromBucketId(null);
@@ -128,6 +138,7 @@ export default function App() {
           setActivePage("collection");
           setCommentPost(null);
           setCommentFromBucket(null);
+          setCommentFromPage(null);
           setPendingBucketId(route.bucketId);
           setPendingPostId(null);
           setPendingFromBucketId(null);
@@ -135,7 +146,12 @@ export default function App() {
         case "post-comments":
           setPendingPostId(route.postId);
           setPendingFromBucketId(route.fromBucketId ?? null);
-          if (route.fromBucketId !== undefined) setActivePage("collection");
+          setCommentFromPage(route.fromBucketId === undefined && route.from ? route.from : null);
+          if (route.fromBucketId !== undefined || route.from === "collection") {
+            setActivePage("collection");
+          } else {
+            setActivePage("home");
+          }
           break;
       }
     };
@@ -190,7 +206,12 @@ export default function App() {
     }
     let route: Route;
     if (commentPost) {
-      route = { kind: "post-comments", postId: commentPost.id, fromBucketId: commentFromBucket?.id };
+      route = {
+        kind: "post-comments",
+        postId: commentPost.id,
+        fromBucketId: commentFromBucket?.id,
+        from: commentFromBucket ? undefined : (commentFromPage ?? "home"),
+      };
     } else if (viewingBucket) {
       route = { kind: "bucket", bucketId: viewingBucket.id };
     } else if (activePage === "collection") {
@@ -203,7 +224,7 @@ export default function App() {
       console.log("[router] write URL:", window.location.hash, "→", newHash);
       window.history.pushState(null, "", newHash);
     }
-  }, [isInitialized, activePage, activeTab, selected, commentPost, viewingBucket, commentFromBucket, pendingPostId, pendingBucketId, pendingFromBucketId]);
+  }, [isInitialized, activePage, activeTab, selected, commentPost, viewingBucket, commentFromBucket, commentFromPage, pendingPostId, pendingBucketId, pendingFromBucketId]);
 
   // 初回起動時に匿名JWTを発行する（既に localStorage にあれば即解決）
   useEffect(() => {
@@ -257,8 +278,10 @@ export default function App() {
   }, []);
 
   const handleOpenComments = useCallback((post: Post) => {
+    // コメントモーダルを開いた時点での背景画面を記録（リロード時の復元に使用）
+    setCommentFromPage(activePage === "collection" ? "collection" : "home");
     setCommentPost(post);
-  }, []);
+  }, [activePage]);
 
   const handleDeletePost = useCallback((id: number) => {
     setPosts((prev) => prev.filter((p) => p.id !== id));
@@ -508,7 +531,7 @@ export default function App() {
       {isMobile && <BottomNav activePage={activePage} onChangePage={handleChangePage} />}
 
       {/* Modals */}
-      {commentPost && <CommentModal post={commentPost} onClose={() => { setCommentPost(null); setCommentFromBucket(null); }} likedIds={likedIds} userId={userId} fromBucket={commentFromBucket ?? undefined} onBackToBucket={commentFromBucket ? () => { setCommentPost(null); setViewingBucket(commentFromBucket); setCommentFromBucket(null); } : undefined} />}
+      {commentPost && <CommentModal post={commentPost} onClose={() => { setCommentPost(null); setCommentFromBucket(null); setCommentFromPage(null); }} likedIds={likedIds} userId={userId} fromBucket={commentFromBucket ?? undefined} onBackToBucket={commentFromBucket ? () => { setCommentPost(null); setViewingBucket(commentFromBucket); setCommentFromBucket(null); setCommentFromPage(null); } : undefined} />}
       {showPost && <PostModal currentRoom={selected?.room} onClose={() => setShowPost(false)} onPosted={fetchPosts} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} reducedMotion={reducedMotion} onToggleReducedMotion={() => setReducedMotion((v) => !v)} showSpoilers={showSpoilers} onToggleShowSpoilers={() => setShowSpoilers((v) => !v)} laneCount={laneCount} onSetLaneCount={setLaneCount} lane1Dir={lane1Dir} onSetLane1Dir={setLane1Dir} lane2Dir={lane2Dir} onSetLane2Dir={setLane2Dir} isMobile={isMobile} />}
       {bucketTarget && (

@@ -6,17 +6,18 @@ import type { Category, Selected } from "../types";
 // URL に乗せない（リロード時に勝手に編集中フォームが復活すると違和感があるため）。
 //
 // 対応する URL 形式:
-//   #/                                           ホーム + 全体フィード
-//   #/room/:catId/:subId/:room                   ホーム + ルームタブ（カテゴリ指定）
-//   #/collection                                 コレクションページ
-//   #/buckets/:id                                コレクション + 箱を開いている
-//   #/posts/:id/comments                         コメントモーダル
-//   #/buckets/:bid/posts/:pid/comments           箱→皿→コメント（パンくず復元）
+//   #/                                              ホーム + 全体フィード
+//   #/room/:catId/:subId/:room                      ホーム + ルームタブ（カテゴリ指定）
+//   #/collection                                    コレクションページ
+//   #/buckets/:id                                   コレクション + 箱を開いている
+//   #/posts/:id/comments                            ホーム背景でコメントモーダル
+//   #/collection/posts/:id/comments                 コレクション背景でコメントモーダル
+//   #/buckets/:bid/posts/:pid/comments              箱→皿→コメント（パンくず復元）
 export type Route =
   | { kind: "home"; tab: "feed" | "room"; selected?: Selected }
   | { kind: "collection" }
   | { kind: "bucket"; bucketId: number }
-  | { kind: "post-comments"; postId: number; fromBucketId?: number };
+  | { kind: "post-comments"; postId: number; from?: "home" | "collection"; fromBucketId?: number };
 
 export function parseHash(hash: string, categories: Category[]): Route {
   const raw = hash.startsWith("#") ? hash.slice(1) : hash;
@@ -50,9 +51,15 @@ export function parseHash(hash: string, categories: Category[]): Route {
     }
   }
 
+  // #/collection/posts/:id/comments → コレクション背景のコメント
+  if (parts[0] === "collection" && parts.length === 4 && parts[1] === "posts" && parts[3] === "comments") {
+    const id = Number(parts[2]);
+    if (Number.isFinite(id)) return { kind: "post-comments", postId: id, from: "collection" };
+  }
+
   if (parts[0] === "posts" && parts.length === 3 && parts[2] === "comments") {
     const id = Number(parts[1]);
-    if (Number.isFinite(id)) return { kind: "post-comments", postId: id };
+    if (Number.isFinite(id)) return { kind: "post-comments", postId: id, from: "home" };
   }
 
   return { kind: "home", tab: "feed" };
@@ -73,6 +80,9 @@ export function routeToHash(route: Route): string {
     case "post-comments":
       if (route.fromBucketId !== undefined) {
         return `#/buckets/${route.fromBucketId}/posts/${route.postId}/comments`;
+      }
+      if (route.from === "collection") {
+        return `#/collection/posts/${route.postId}/comments`;
       }
       return `#/posts/${route.postId}/comments`;
   }
