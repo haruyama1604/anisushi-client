@@ -362,7 +362,7 @@ export default function App() {
         <div style={{ padding: "14px 24px", background: "rgba(8,8,18,0.95)", borderBottom: "1px solid #1a1a2a", display: "flex", alignItems: "center", justifyContent: "space-between", backdropFilter: "blur(10px)", flexShrink: 0 }}>
           {isMobile ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <img src="/logo.svg" alt="あにすし" style={{ height: 24 }} />
+              <img src="/logo.svg" alt="あにすし" style={{ height: 24, cursor: "pointer" }} onClick={() => handleChangePage("home")} />
               <div style={{ display: "flex", gap: 10 }}>
                 {([
                   ["🥢", posts.length],
