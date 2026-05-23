@@ -22,8 +22,9 @@ export function BucketDetailModal({ bucket, onClose, likedIds, onOpenComments, a
   }, [bucket.id]);
 
   // allPosts と bucketPostIds の交差で表示する皿一覧を導出。
-  // allPosts から削除された皿は自動的に表示からも消える。
-  const bucketPosts = allPosts.filter((p) => bucketPostIds.has(p.id));
+  // さらに likedIds でフィルタすることで、「皿を返す（いいね取り消し）」操作の瞬間に
+  // 箱の表示からも自動で消える（サーバー側でも bucket_posts から削除される）。
+  const bucketPosts = allPosts.filter((p) => bucketPostIds.has(p.id) && likedIds.has(p.id));
 
   const removePost = async (postId: number) => {
     await authFetch(`${API_BASE}/buckets/${bucket.id}/posts/${postId}`, {
