@@ -172,11 +172,12 @@ export function PlateCard({
             {isLiked ? "✅" : "🥢"} {post.likes}
           </button>
           <button
-            onClick={() => onOpenComments(post)}
-            title={isLiked ? "コメントを書く・閲覧する" : "コメント閲覧のみ。書き込みは皿を取ってから"}
-            style={{ flex: 1, padding: "8px 0", background: isLiked ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)", border: `1px solid ${isLiked ? "#444" : "#2f2f3f"}`, borderRadius: 10, color: isLiked ? "#ccc" : "#888", fontSize: 12, cursor: "pointer", fontFamily: "'Noto Sans JP', sans-serif", transition: "all 0.3s" }}
+            onClick={() => { if (isLiked) onOpenComments(post); }}
+            disabled={!isLiked}
+            title={isLiked ? "コメントを書く・閲覧する" : "先に皿を取ってください"}
+            style={{ flex: 1, padding: "8px 0", background: isLiked ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${isLiked ? "#444" : "#222"}`, borderRadius: 10, color: isLiked ? "#ccc" : "#444", fontSize: 12, cursor: isLiked ? "pointer" : "not-allowed", fontFamily: "'Noto Sans JP', sans-serif", transition: "all 0.3s" }}
           >
-            {isLiked ? "💬 コメント" : "💬 コメントを見る"}
+            {isLiked ? "💬 コメント" : "🔒 ロック"}
           </button>
         </div>
         {isLiked && onAddToBucket && (
