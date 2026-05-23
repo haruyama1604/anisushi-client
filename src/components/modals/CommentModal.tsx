@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { Post, Comment, Reply, Bucket } from "../../types";
 import { API_BASE, authFetch } from "../../utils/api";
 import { TIER_CONFIG } from "../../utils/categories";
+import { formatDateTime } from "../../utils/format";
 
 export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBackToBucket }: {
   post: Post;
@@ -57,6 +58,7 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
   };
 
   const handleAddReply = async (commentId: number) => {
+    if (!canComment) return;
     const text = (replyTexts[commentId] ?? "").trim();
     if (!text) return;
     const reply: Reply = await authFetch(`${API_BASE}/comments/${commentId}/replies`, {
@@ -130,7 +132,7 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
                         onMouseLeave={(e) => (e.currentTarget.style.color = "#c0392b")}>🗑</button>
                     )}
                     <div style={{ color: "#555", fontSize: 10, fontFamily: "'Noto Sans JP', sans-serif", marginBottom: 4 }}>
-                      {c.user_id === "system" ? "運営" : c.user_id === userId ? "あなた" : "ユーザー"} · {c.created_at.slice(0, 16).replace("T", " ")}
+                      {c.user_id === "system" ? "運営" : c.user_id === userId ? "あなた" : "ユーザー"} · {formatDateTime(c.created_at)}
                     </div>
                     <p style={{ color: "#bbb", fontSize: 13, margin: 0, fontFamily: "'Noto Sans JP', sans-serif", lineHeight: 1.6 }}>{c.text}</p>
                   </div>
@@ -142,11 +144,13 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
                       {c.liked_by_user ? "❤️" : "🤍"} {c.likes}
                     </button>
                     <button
-                      onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 12, fontFamily: "'Noto Sans JP', sans-serif", padding: 0, transition: "color 0.15s" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "#aaa")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}>
-                      💬 返信{(replies[c.id]?.length ?? 0) > 0 ? ` (${replies[c.id].length})` : ""}
+                      onClick={() => { if (canComment) setReplyingTo(replyingTo === c.id ? null : c.id); }}
+                      disabled={!canComment}
+                      title={canComment ? undefined : "先に皿を取ると返信できます"}
+                      style={{ background: "none", border: "none", cursor: canComment ? "pointer" : "not-allowed", color: canComment ? "#555" : "#333", fontSize: 12, fontFamily: "'Noto Sans JP', sans-serif", padding: 0, transition: "color 0.15s", opacity: canComment ? 1 : 0.6 }}
+                      onMouseEnter={(e) => { if (canComment) e.currentTarget.style.color = "#aaa"; }}
+                      onMouseLeave={(e) => { if (canComment) e.currentTarget.style.color = "#555"; }}>
+                      {canComment ? "💬" : "🔒"} 返信{(replies[c.id]?.length ?? 0) > 0 ? ` (${replies[c.id].length})` : ""}
                     </button>
                   </div>
 
@@ -161,7 +165,7 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
                             onMouseLeave={(e) => (e.currentTarget.style.color = "#c0392b")}>🗑</button>
                         )}
                         <div style={{ color: "#555", fontSize: 10, fontFamily: "'Noto Sans JP', sans-serif", marginBottom: 3 }}>
-                          {r.user_id === "system" ? "運営" : r.user_id === userId ? "あなた" : "ユーザー"} · {r.created_at.slice(0, 16).replace("T", " ")}
+                          {r.user_id === "system" ? "運営" : r.user_id === userId ? "あなた" : "ユーザー"} · {formatDateTime(r.created_at)}
                         </div>
                         <p style={{ color: "#aaa", fontSize: 12, margin: 0, fontFamily: "'Noto Sans JP', sans-serif", lineHeight: 1.55 }}>{r.text}</p>
                       </div>

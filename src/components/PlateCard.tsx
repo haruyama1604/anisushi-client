@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Post } from "../types";
 import { API_BASE, authFetch } from "../utils/api";
 import { TIER_CONFIG } from "../utils/categories";
+import { formatDateTime } from "../utils/format";
 
 export function PlateCard({
   post,
@@ -153,7 +154,7 @@ export function PlateCard({
               {post.user_id === "system" ? "運営" : "名無しユーザー"}
             </div>
             <div style={{ color: "#555", fontSize: 10, fontFamily: "'Noto Sans JP', sans-serif" }}>
-              {post.created_at.slice(0, 16).replace("T", " ")}
+              {formatDateTime(post.created_at)}
             </div>
           </div>
         </div>
