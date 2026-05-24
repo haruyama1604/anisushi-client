@@ -3,6 +3,7 @@ import type { Post, Bucket, Selected, NavPage } from "./types";
 import { API_BASE, authFetch, ensureAuth, getStoredUserId } from "./utils/api";
 import { CATEGORIES } from "./utils/categories";
 import { parseHash, routeToHash, type Route } from "./utils/router";
+import { usePersistentState } from "./utils/persistedState";
 import { PlateCard } from "./components/PlateCard";
 import { ConveyorBelt } from "./components/ConveyorBelt";
 import { Sidebar } from "./components/Sidebar";
@@ -39,12 +40,13 @@ export default function App() {
   const [commentFromBucket, setCommentFromBucket] = useState<Bucket | null>(null);
   const [showPost, setShowPost] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const [showSpoilers, setShowSpoilers] = useState(false);
-  const [laneCount, setLaneCount] = useState<1 | 2>(2);
-  const [lane1Dir, setLane1Dir] = useState<"rtl" | "ltr">("rtl");
-  const [lane2Dir, setLane2Dir] = useState<"rtl" | "ltr">("ltr");
-  const [convSpeed, setConvSpeed] = useState<"slow" | "normal" | "fast">("normal");
+  // ユーザー設定は localStorage に永続化（リロード後も維持）
+  const [reducedMotion, setReducedMotion] = usePersistentState<boolean>("anisushi_setting_reducedMotion", false);
+  const [showSpoilers, setShowSpoilers] = usePersistentState<boolean>("anisushi_setting_showSpoilers", false);
+  const [laneCount, setLaneCount] = usePersistentState<1 | 2>("anisushi_setting_laneCount", 2);
+  const [lane1Dir, setLane1Dir] = usePersistentState<"rtl" | "ltr">("anisushi_setting_lane1Dir", "rtl");
+  const [lane2Dir, setLane2Dir] = usePersistentState<"rtl" | "ltr">("anisushi_setting_lane2Dir", "ltr");
+  const [convSpeed, setConvSpeed] = usePersistentState<"slow" | "normal" | "fast">("anisushi_setting_convSpeed", "normal");
   const [activeTab, setActiveTab] = useState<"feed" | "room">(() => {
     const r = readInitialRoute();
     return r.kind === "home" ? r.tab : "feed";
