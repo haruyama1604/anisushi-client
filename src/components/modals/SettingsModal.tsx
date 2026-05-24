@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, showSpoilers, onToggleShowSpoilers, laneCount, onSetLaneCount, lane1Dir, onSetLane1Dir, lane2Dir, onSetLane2Dir, isMobile, speed, onSetSpeed }: {
   onClose: () => void;
   reducedMotion: boolean;
@@ -14,6 +16,7 @@ export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, s
   speed: "slow" | "normal" | "fast";
   onSetSpeed: (s: "slow" | "normal" | "fast") => void;
 }) {
+  const [laneExpanded, setLaneExpanded] = useState(false);
   const pending = ["ダークモード切り替え", "SEのオン・オフ", "BGMのオン・オフ", "文字サイズの調節", "言語切り替え"];
   const speedOptions: { key: "slow" | "normal" | "fast"; label: string }[] = [
     { key: "slow", label: "ゆっくり" },
@@ -46,42 +49,54 @@ export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, s
         </div>
         <div style={{ padding: 20 }}>
 
-          {/* レーン数・向き（PCのみ） */}
-          {!isMobile && (
-            <>
+          {/* レーン管理（アコーディオン）：レーン数・向き・速さをまとめて格納 */}
+          <div
+            onClick={() => setLaneExpanded((v) => !v)}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a", cursor: "pointer", userSelect: "none" }}
+          >
+            <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>レーン管理</span>
+            <span style={{ color: "#888", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>{laneExpanded ? "▼" : "▶"}</span>
+          </div>
+
+          {laneExpanded && (
+            <div style={{ paddingLeft: 12 }}>
+              {!isMobile && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
+                    <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>流れるレーン数</span>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {([1, 2] as const).map((n) => (
+                        <button key={n} onClick={() => onSetLaneCount(n)} style={{ padding: "3px 14px", borderRadius: 8, border: `1px solid ${laneCount === n ? "#e74c3c" : "#333"}`, background: laneCount === n ? "rgba(192,57,43,0.2)" : "rgba(255,255,255,0.03)", color: laneCount === n ? "#e74c3c" : "#666", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+                          {n}本
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
+                    <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>1本目の向き</span>
+                    <DirSelect value={lane1Dir} onChange={onSetLane1Dir} />
+                  </div>
+                  {laneCount === 2 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
+                      <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>2本目の向き</span>
+                      <DirSelect value={lane2Dir} onChange={onSetLane2Dir} />
+                    </div>
+                  )}
+                </>
+              )}
+
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
-                <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>流れるレーン数</span>
+                <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>流れる速さ</span>
                 <div style={{ display: "flex", gap: 4 }}>
-                  {([1, 2] as const).map((n) => (
-                    <button key={n} onClick={() => onSetLaneCount(n)} style={{ padding: "3px 14px", borderRadius: 8, border: `1px solid ${laneCount === n ? "#e74c3c" : "#333"}`, background: laneCount === n ? "rgba(192,57,43,0.2)" : "rgba(255,255,255,0.03)", color: laneCount === n ? "#e74c3c" : "#666", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
-                      {n}本
+                  {speedOptions.map((o) => (
+                    <button key={o.key} onClick={() => onSetSpeed(o.key)} style={{ padding: "3px 10px", borderRadius: 8, border: `1px solid ${speed === o.key ? "#e74c3c" : "#333"}`, background: speed === o.key ? "rgba(192,57,43,0.2)" : "rgba(255,255,255,0.03)", color: speed === o.key ? "#e74c3c" : "#666", fontSize: 11, cursor: "pointer", fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 600 }}>
+                      {o.label}
                     </button>
                   ))}
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
-                <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>1本目の向き</span>
-                <DirSelect value={lane1Dir} onChange={onSetLane1Dir} />
-              </div>
-              {laneCount === 2 && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
-                  <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>2本目の向き</span>
-                  <DirSelect value={lane2Dir} onChange={onSetLane2Dir} />
-                </div>
-              )}
-            </>
-          )}
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
-            <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>流れる速さ</span>
-            <div style={{ display: "flex", gap: 4 }}>
-              {speedOptions.map((o) => (
-                <button key={o.key} onClick={() => onSetSpeed(o.key)} style={{ padding: "3px 10px", borderRadius: 8, border: `1px solid ${speed === o.key ? "#e74c3c" : "#333"}`, background: speed === o.key ? "rgba(192,57,43,0.2)" : "rgba(255,255,255,0.03)", color: speed === o.key ? "#e74c3c" : "#666", fontSize: 11, cursor: "pointer", fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 600 }}>
-                  {o.label}
-                </button>
-              ))}
             </div>
-          </div>
+          )}
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
             <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>ネタバレを表示</span>
