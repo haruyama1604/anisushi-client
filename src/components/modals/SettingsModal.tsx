@@ -1,4 +1,4 @@
-export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, showSpoilers, onToggleShowSpoilers, laneCount, onSetLaneCount, lane1Dir, onSetLane1Dir, lane2Dir, onSetLane2Dir, isMobile }: {
+export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, showSpoilers, onToggleShowSpoilers, laneCount, onSetLaneCount, lane1Dir, onSetLane1Dir, lane2Dir, onSetLane2Dir, isMobile, speed, onSetSpeed }: {
   onClose: () => void;
   reducedMotion: boolean;
   onToggleReducedMotion: () => void;
@@ -11,8 +11,15 @@ export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, s
   lane2Dir: "rtl" | "ltr";
   onSetLane2Dir: (d: "rtl" | "ltr") => void;
   isMobile: boolean;
+  speed: "slow" | "normal" | "fast";
+  onSetSpeed: (s: "slow" | "normal" | "fast") => void;
 }) {
-  const pending = ["流れる速さの調節", "ダークモード切り替え", "SEのオン・オフ", "BGMのオン・オフ", "文字サイズの調節", "言語切り替え"];
+  const pending = ["ダークモード切り替え", "SEのオン・オフ", "BGMのオン・オフ", "文字サイズの調節", "言語切り替え"];
+  const speedOptions: { key: "slow" | "normal" | "fast"; label: string }[] = [
+    { key: "slow", label: "🐢 ゆっくり" },
+    { key: "normal", label: "🚶 ふつう" },
+    { key: "fast", label: "🏃 はやい" },
+  ];
 
   const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
     <div onClick={onToggle} style={{ width: 44, height: 24, borderRadius: 12, background: on ? "#c0392b" : "#2a2a3a", position: "relative", cursor: "pointer", transition: "background 0.2s", border: `1px solid ${on ? "#e74c3c" : "#444"}`, flexShrink: 0 }}>
@@ -64,6 +71,17 @@ export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, s
               )}
             </>
           )}
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
+            <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>流れる速さ</span>
+            <div style={{ display: "flex", gap: 4 }}>
+              {speedOptions.map((o) => (
+                <button key={o.key} onClick={() => onSetSpeed(o.key)} style={{ padding: "3px 10px", borderRadius: 8, border: `1px solid ${speed === o.key ? "#e74c3c" : "#333"}`, background: speed === o.key ? "rgba(192,57,43,0.2)" : "rgba(255,255,255,0.03)", color: speed === o.key ? "#e74c3c" : "#666", fontSize: 11, cursor: "pointer", fontFamily: "'Noto Sans JP', sans-serif", fontWeight: 600 }}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #1a1a2a" }}>
             <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif" }}>ネタバレを表示</span>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import type { Post } from "../types";
 import { PlateCard } from "./PlateCard";
 
-export function ConveyorBelt({ posts, likedIds, onLike, onUnlike, onOpenComments, userId, onDelete, forcePaused, reducedMotion, showSpoilers, laneCount, lane1Dir, lane2Dir, isMobile }: {
+export function ConveyorBelt({ posts, likedIds, onLike, onUnlike, onOpenComments, userId, onDelete, forcePaused, reducedMotion, showSpoilers, laneCount, lane1Dir, lane2Dir, isMobile, speed }: {
   posts: Post[];
   likedIds: Set<number>;
   onLike: (id: number) => void;
@@ -17,7 +17,10 @@ export function ConveyorBelt({ posts, likedIds, onLike, onUnlike, onOpenComments
   lane1Dir?: "rtl" | "ltr";
   lane2Dir?: "rtl" | "ltr";
   isMobile?: boolean;
+  speed?: "slow" | "normal" | "fast";
 }) {
+  // 速度プリセット → アニメーションの位置変位倍率
+  const speedMult = speed === "slow" ? 0.5 : speed === "fast" ? 2.0 : 1.0;
   const track1Ref = useRef<HTMLDivElement>(null);
   const track2Ref = useRef<HTMLDivElement>(null);
   const [hoverPaused, setHoverPaused] = useState(false);
@@ -41,7 +44,7 @@ export function ConveyorBelt({ posts, likedIds, onLike, onUnlike, onOpenComments
     const step = (ts: number) => {
       if (!last) last = ts;
       if (!paused) {
-        const delta = (ts - last) * 0.04;
+        const delta = (ts - last) * 0.04 * speedMult;
         if (isVertical) {
           const total1 = t1.scrollHeight / 2;
           pos1Ref.current += delta;
@@ -65,7 +68,7 @@ export function ConveyorBelt({ posts, likedIds, onLike, onUnlike, onOpenComments
     };
     rafRef.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [paused, laneCount, lane1Dir, lane2Dir, isVertical]);
+  }, [paused, laneCount, lane1Dir, lane2Dir, isVertical, speedMult]);
 
   const doubled = [...posts, ...posts];
 
