@@ -500,20 +500,6 @@ export default function App() {
                 )}
               </div>
 
-              {(() => {
-                const myPosts = posts.filter((p) => p.user_id === userId);
-                if (myPosts.length === 0) return null;
-                return (
-                  <div style={{ marginTop: 36 }}>
-                    <div style={{ color: "#e0e0e0", fontSize: 11, letterSpacing: 2, fontFamily: "'Noto Sans JP', sans-serif", marginBottom: 16 }}>━━ 出した皿 ━━</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-                      {myPosts.map((post) => (
-                        <PlateCard key={post.id} post={post} isLiked={likedIds.has(post.id)} onLike={handleLike} onUnlike={handleUnlike} onOpenComments={handleOpenComments} userId={userId} onDelete={handleDeletePost} reducedMotion={reducedMotion} showSpoilers={showSpoilers} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
 
           ) : (
@@ -528,14 +514,20 @@ export default function App() {
                   <div style={{ color: "#e0e0e0", fontSize: 11, letterSpacing: 2, fontFamily: "'Noto Sans JP', sans-serif" }}>━━ 皿が流れています。気に入ったら取ってください ━━</div>
                 </div>
                 <ConveyorBelt posts={filteredPosts} likedIds={likedIds} onLike={handleLike} onUnlike={handleUnlike} onOpenComments={handleOpenComments} userId={userId} onDelete={handleDeletePost} forcePaused={showSettings} reducedMotion={reducedMotion} showSpoilers={showSpoilers} laneCount={laneCount} lane1Dir={lane1Dir} lane2Dir={lane2Dir} isMobile={isMobile} speed={convSpeed} />
-                <div style={{ padding: "24px", borderTop: "1px solid #1a1a2a" }}>
-                  <div style={{ color: "#e0e0e0", fontSize: 11, letterSpacing: 2, fontFamily: "'Noto Sans JP', sans-serif", marginBottom: 16 }}>━━ 全ての皿 ━━</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-                    {filteredPosts.map((post) => (
-                      <PlateCard key={post.id} post={post} isLiked={likedIds.has(post.id)} onLike={handleLike} onUnlike={handleUnlike} onOpenComments={handleOpenComments} userId={userId} onDelete={handleDeletePost} reducedMotion={reducedMotion} showSpoilers={showSpoilers} />
-                    ))}
-                  </div>
-                </div>
+                {(() => {
+                  const myPosts = posts.filter((p) => p.user_id === userId);
+                  if (myPosts.length === 0) return null;
+                  return (
+                    <div style={{ padding: "24px", borderTop: "1px solid #1a1a2a" }}>
+                      <div style={{ color: "#e0e0e0", fontSize: 11, letterSpacing: 2, fontFamily: "'Noto Sans JP', sans-serif", marginBottom: 16 }}>━━ 出した皿 ━━</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+                        {myPosts.map((post) => (
+                          <PlateCard key={post.id} post={post} isLiked={likedIds.has(post.id)} onLike={handleLike} onUnlike={handleUnlike} onOpenComments={handleOpenComments} userId={userId} onDelete={handleDeletePost} reducedMotion={reducedMotion} showSpoilers={showSpoilers} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )
           )}
