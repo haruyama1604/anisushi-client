@@ -296,6 +296,17 @@ export default function App() {
     setActivePage(page);
   };
 
+  // 全設定をデフォルト値に戻す（設定モーダルの「初期設定に戻す」ボタンから呼ばれる）。
+  // localStorage への書き戻しは usePersistentState の useEffect が自動で実行する。
+  const resetSettings = useCallback(() => {
+    setReducedMotion(false);
+    setShowSpoilers(false);
+    setLaneCount(2);
+    setLane1Dir("rtl");
+    setLane2Dir("ltr");
+    setConvSpeed("normal");
+  }, [setReducedMotion, setShowSpoilers, setLaneCount, setLane1Dir, setLane2Dir, setConvSpeed]);
+
   const getNextBucketName = () => {
     const base = "新しい箱";
     const names = new Set(buckets.map((b) => b.name));
@@ -536,7 +547,7 @@ export default function App() {
       {/* Modals */}
       {commentPost && <CommentModal post={commentPost} onClose={() => { setCommentPost(null); setCommentFromBucket(null); setCommentFromPage(null); }} likedIds={likedIds} userId={userId} fromBucket={commentFromBucket ?? undefined} onBackToBucket={commentFromBucket ? () => { setCommentPost(null); setViewingBucket(commentFromBucket); setCommentFromBucket(null); setCommentFromPage(null); } : undefined} />}
       {showPost && <PostModal currentRoom={selected?.room} onClose={() => setShowPost(false)} onPosted={fetchPosts} />}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} reducedMotion={reducedMotion} onToggleReducedMotion={() => setReducedMotion((v) => !v)} showSpoilers={showSpoilers} onToggleShowSpoilers={() => setShowSpoilers((v) => !v)} laneCount={laneCount} onSetLaneCount={setLaneCount} lane1Dir={lane1Dir} onSetLane1Dir={setLane1Dir} lane2Dir={lane2Dir} onSetLane2Dir={setLane2Dir} isMobile={isMobile} speed={convSpeed} onSetSpeed={setConvSpeed} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} reducedMotion={reducedMotion} onToggleReducedMotion={() => setReducedMotion((v) => !v)} showSpoilers={showSpoilers} onToggleShowSpoilers={() => setShowSpoilers((v) => !v)} laneCount={laneCount} onSetLaneCount={setLaneCount} lane1Dir={lane1Dir} onSetLane1Dir={setLane1Dir} lane2Dir={lane2Dir} onSetLane2Dir={setLane2Dir} isMobile={isMobile} speed={convSpeed} onSetSpeed={setConvSpeed} onReset={resetSettings} />}
       {bucketTarget && (
         <BucketSelectorModal
           post={bucketTarget}

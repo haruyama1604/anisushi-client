@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, showSpoilers, onToggleShowSpoilers, laneCount, onSetLaneCount, lane1Dir, onSetLane1Dir, lane2Dir, onSetLane2Dir, isMobile, speed, onSetSpeed }: {
+export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, showSpoilers, onToggleShowSpoilers, laneCount, onSetLaneCount, lane1Dir, onSetLane1Dir, lane2Dir, onSetLane2Dir, isMobile, speed, onSetSpeed, onReset }: {
   onClose: () => void;
   reducedMotion: boolean;
   onToggleReducedMotion: () => void;
@@ -15,8 +15,10 @@ export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, s
   isMobile: boolean;
   speed: "slow" | "normal" | "fast";
   onSetSpeed: (s: "slow" | "normal" | "fast") => void;
+  onReset: () => void;
 }) {
-  const [laneExpanded, setLaneExpanded] = useState(false);
+  // デフォルトでレーン管理を開いた状態にする（ユーザー指示の初期表示に合わせる）
+  const [laneExpanded, setLaneExpanded] = useState(true);
   const pending = ["ダークモード切り替え", "SEのオン・オフ", "BGMのオン・オフ", "文字サイズの調節", "言語切り替え"];
   const speedOptions: { key: "slow" | "normal" | "fast"; label: string }[] = [
     { key: "slow", label: "ゆっくり" },
@@ -114,6 +116,17 @@ export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, s
               <span style={{ color: "#555", fontSize: 11, fontFamily: "'Noto Sans JP', sans-serif" }}>🚧 準備中</span>
             </div>
           ))}
+
+          {/* 初期設定に戻すボタン：押すと App.tsx 側で全6設定をデフォルトに戻し、レーン管理も開いた状態にする */}
+          <div
+            onClick={() => { onReset(); setLaneExpanded(true); }}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", cursor: "pointer", userSelect: "none", transition: "color 0.15s" }}
+            onMouseEnter={(e) => { (e.currentTarget.firstChild as HTMLElement).style.color = "#e74c3c"; }}
+            onMouseLeave={(e) => { (e.currentTarget.firstChild as HTMLElement).style.color = "#e0e0e0"; }}
+          >
+            <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "'Noto Sans JP', sans-serif", transition: "color 0.15s" }}>初期設定に戻す</span>
+            <span style={{ fontSize: 16 }}>🔄</span>
+          </div>
         </div>
       </div>
     </div>
