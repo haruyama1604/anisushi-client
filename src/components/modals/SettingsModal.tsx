@@ -16,9 +16,9 @@ export function SettingsModal({ onClose, reducedMotion, onToggleReducedMotion, s
 }) {
   const pending = ["ダークモード切り替え", "SEのオン・オフ", "BGMのオン・オフ", "文字サイズの調節", "言語切り替え"];
   const speedOptions: { key: "slow" | "normal" | "fast"; label: string }[] = [
-    { key: "slow", label: "🐢 ゆっくり" },
-    { key: "normal", label: "🚶 ふつう" },
-    { key: "fast", label: "🏃 はやい" },
+    { key: "slow", label: "ゆっくり" },
+    { key: "normal", label: "ふつう" },
+    { key: "fast", label: "はやい" },
   ];
 
   const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
