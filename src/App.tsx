@@ -379,7 +379,7 @@ export default function App() {
               <img src="/logo.svg" alt="あにすし" style={{ height: 24, cursor: "pointer" }} onClick={() => handleChangePage("home")} />
               <div style={{ display: "flex", gap: 10 }}>
                 {([
-                  ["🥢", posts.length],
+                  ["🍽️", posts.length],
                   ["✅", likedIds.size],
                   ["✨", posts.filter((p) => p.tier === "gold").length],
                 ] as [string, number][]).map(([icon, val]) => (
