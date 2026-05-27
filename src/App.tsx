@@ -18,9 +18,7 @@ import { BucketDetailModal } from "./components/modals/BucketDetailModal";
 // URLハッシュから初期 route を 1 回だけ計算するヘルパー。useState の lazy init で使う。
 // 各useState の lazy init 内で個別に parseHash を呼ぶより、共通化して 1 度の解析に揃える。
 function readInitialRoute(): Route {
-  const route = parseHash(typeof window !== "undefined" ? window.location.hash : "", CATEGORIES);
-  console.log("[router] initial hash:", typeof window !== "undefined" ? window.location.hash : "(no window)", "→ route:", route);
-  return route;
+  return parseHash(typeof window !== "undefined" ? window.location.hash : "", CATEGORIES);
 }
 
 export default function App() {
@@ -98,7 +96,6 @@ export default function App() {
   const [isInitialized, setIsInitialized] = useState<boolean>(() => {
     const r = readInitialRoute();
     const needsAsync = r.kind === "post-comments" || r.kind === "bucket";
-    console.log("[router] isInitialized initial:", !needsAsync, "(needsAsync:", needsAsync, ")");
     return !needsAsync;
   });
 
@@ -113,7 +110,6 @@ export default function App() {
   useEffect(() => {
     const applyFromHash = () => {
       const route = parseHash(window.location.hash, CATEGORIES);
-      console.log("[router] popstate → route:", route);
       switch (route.kind) {
         case "home":
           setActivePage("home");
@@ -168,7 +164,6 @@ export default function App() {
   useEffect(() => {
     if (isInitialized) return;
     if (pendingPostId !== null || pendingBucketId !== null || pendingFromBucketId !== null) return;
-    console.log("[router] initialization complete (after pending resolved)");
     setIsInitialized(true);
   }, [isInitialized, pendingPostId, pendingBucketId, pendingFromBucketId]);
 
@@ -199,14 +194,8 @@ export default function App() {
   // 絶対防壁：isInitialized が true になるまで window.location.hash には一切触らない。
   // 追加防壁：pending* が残っている間も書き換えない（popstate 後の async 解決中など）。
   useEffect(() => {
-    if (!isInitialized) {
-      console.log("[router] skip URL write (not initialized yet)");
-      return;
-    }
-    if (pendingPostId !== null || pendingBucketId !== null || pendingFromBucketId !== null) {
-      console.log("[router] skip URL write (pending resolution in progress)");
-      return;
-    }
+    if (!isInitialized) return;
+    if (pendingPostId !== null || pendingBucketId !== null || pendingFromBucketId !== null) return;
     let route: Route;
     if (commentPost) {
       route = {
@@ -224,7 +213,6 @@ export default function App() {
     }
     const newHash = routeToHash(route);
     if (window.location.hash !== newHash) {
-      console.log("[router] write URL:", window.location.hash, "→", newHash);
       window.history.pushState(null, "", newHash);
     }
   }, [isInitialized, activePage, activeTab, selected, commentPost, viewingBucket, commentFromBucket, commentFromPage, pendingPostId, pendingBucketId, pendingFromBucketId]);
