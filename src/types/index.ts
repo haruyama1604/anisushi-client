@@ -7,7 +7,6 @@ export type Post = {
   id: number;
   content: string;
   likes: number;
-  views: number;
   user_id: string;
   room: string;
   created_at: string;

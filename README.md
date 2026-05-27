@@ -44,13 +44,12 @@ https://anisushi-client.vercel.app
 ### 3. tierシステム
 
 ```
-likes / views >= 0.7 → gold（金皿）
-likes / views >= 0.4 → silver（銀皿）
-それ以外           → normal（赤皿）
-views = 0          → normal
+likes >= 200 → gold（金皿）
+likes >= 80  → silver（銀皿）
+それ以外     → normal（赤皿、likes=0 含む）
 ```
 
-サーバ側で都度計算した値をそのまま使用。
+サーバ側で都度計算した値をそのまま使用。views は旧実装で比率方式を取っていたが、過剰設計だったため撤去（server README §2 参照）。
 
 ## ローカル起動
 

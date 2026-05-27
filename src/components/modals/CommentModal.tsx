@@ -34,11 +34,6 @@ export function CommentModal({ post, onClose, likedIds, userId, fromBucket, onBa
 
   useEffect(() => {
     fetchComments();
-    authFetch(`${API_BASE}/posts/${post.id}/view`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    }).catch(() => {});
   }, [post.id]);
 
   const handleHeartClick = (commentId: number, isLiked: boolean) => {
