@@ -548,6 +548,12 @@ export default function App() {
             setCommentPost(post);
             setViewingBucket(null);
           }}
+          onRenamed={(updated) => {
+            // 箱一覧と「現在開いている箱」両方を新しい name で更新する。
+            // 一覧側の更新だけだと、モーダルのタイトルが古いままになる。
+            setBuckets((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+            setViewingBucket(updated);
+          }}
         />
       )}
     </div>
