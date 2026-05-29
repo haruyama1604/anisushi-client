@@ -352,7 +352,11 @@ export default function App() {
         <Sidebar
           categories={CATEGORIES}
           selected={selected}
-          onSelect={(s) => { setSelected(s); setActivePage("home"); }}
+          // サイドバーで部屋を選んだら、自動的に「このルーム」タブへ切り替える。
+          // 全体フィードのまま部屋名だけ変わっても見た目に変化が無く、ユーザーの
+          // 「絞り込みたい」意図と挙動が噛み合わなかったため。
+          // 全体に戻したい場合はタブの「🌊 全体フィード」を押せば戻れる。
+          onSelect={(s) => { setSelected(s); setActivePage("home"); setActiveTab("room"); }}
           activePage={activePage}
           onChangePage={handleChangePage}
         />
