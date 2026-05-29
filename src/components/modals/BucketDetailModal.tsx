@@ -119,13 +119,6 @@ export function BucketDetailModal({ bucket, onClose, likedIds, onOpenComments, a
               >
                 {saving ? "..." : "保存"}
               </button>
-              <button
-                onClick={cancelEditName}
-                disabled={saving}
-                style={{ background: "none", border: "1px solid #2a2a3a", color: "#888", fontSize: 12, padding: "5px 10px", borderRadius: 6, cursor: "pointer", fontFamily: "'Noto Sans JP', sans-serif" }}
-              >
-                取消
-              </button>
             </div>
           ) : (
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
@@ -142,7 +135,20 @@ export function BucketDetailModal({ bucket, onClose, likedIds, onOpenComments, a
               </button>
             </div>
           )}
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#666", fontSize: 20, cursor: "pointer", flexShrink: 0 }}>✕</button>
+          {/*
+            ✕ ボタンはデュアル動作:
+              - 編集中なら「編集をキャンセル」(モーダルは閉じない)
+              - 非編集なら「モーダルを閉じる」
+            取消専用ボタンを廃して導線を1つに集約することで UI を簡素化している。
+          */}
+          <button
+            onClick={() => { if (isEditingName) cancelEditName(); else onClose(); }}
+            title={isEditingName ? "編集を取り消す" : "閉じる"}
+            aria-label={isEditingName ? "編集を取り消す" : "閉じる"}
+            style={{ background: "none", border: "none", color: "#666", fontSize: 20, cursor: "pointer", flexShrink: 0 }}
+          >
+            ✕
+          </button>
         </div>
         {renameError && (
           <div style={{ padding: "6px 20px", color: "#e57373", fontSize: 11, fontFamily: "'Noto Sans JP', sans-serif", background: "rgba(229,115,115,0.06)", borderBottom: "1px solid rgba(229,115,115,0.2)" }}>{renameError}</div>
