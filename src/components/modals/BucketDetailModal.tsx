@@ -103,6 +103,9 @@ export function BucketDetailModal({ bucket, onClose, likedIds, onOpenComments, a
               <input
                 autoFocus
                 value={nameInput}
+                // autoFocus でフォーカスが入った瞬間に既存テキストを全選択しておく。
+                // 「改名」を押した直後にそのまま打鍵すれば既存名を上書きできて入力が速い。
+                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => setNameInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") { e.preventDefault(); saveName(); }
@@ -115,7 +118,9 @@ export function BucketDetailModal({ bucket, onClose, likedIds, onOpenComments, a
               <button
                 onClick={saveName}
                 disabled={saving}
-                style={{ background: "rgba(76,175,80,0.15)", border: "1px solid rgba(76,175,80,0.5)", color: "#81c784", fontSize: 12, fontWeight: 700, padding: "5px 10px", borderRadius: 6, cursor: saving ? "wait" : "pointer", fontFamily: "'Noto Sans JP', sans-serif" }}
+                // ✕ ボタンとの押し間違い防止のため、保存ボタンを右にマージン分だけ離す。
+                // 以前あった「取消」ボタンが間に挟まっていた頃と同程度の隙間を確保する。
+                style={{ background: "rgba(76,175,80,0.15)", border: "1px solid rgba(76,175,80,0.5)", color: "#81c784", fontSize: 12, fontWeight: 700, padding: "5px 10px", borderRadius: 6, cursor: saving ? "wait" : "pointer", fontFamily: "'Noto Sans JP', sans-serif", marginRight: 56 }}
               >
                 {saving ? "..." : "保存"}
               </button>
